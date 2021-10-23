@@ -5,9 +5,10 @@ import { Route, Switch } from "react-router-dom";
 import ShopPage from "./pages/shop/shop.component";
 import Header from "./components/header/header.component";
 import SignInAndSignUpPage from "./pages/sign-in-and-sign-up/sign-in-and-sign-up.component";
-import { auth } from "./firebase/firebase.utils";
+import { auth, createUserProfileDocument } from "./firebase/firebase.utils";
 
 export class App extends React.Component {
+
   constructor(props) {
     super(props);
 
@@ -21,11 +22,23 @@ export class App extends React.Component {
   // these code allows us to subscribe to firebase authService and recognise any new user login
   // here once the user is sign-in, util we manually sign-out, the user will remain sign even when we refresh the page.
   componentDidMount() {
-    this.unSubscribeFromAuth = auth.onAuthStateChanged((user) => {
+    this.unSubscribeFromAuth = auth.onAuthStateChanged(async (userAuth) => {
       // this connect our app with the firebase authentication system.
-      // this is an open subscription , means it will always connected with firebase as long as our component is mounted on the DOM.
-      this.setState({ currentUser: user });
-      console.log(user);
+      // this is an open subscription , means it will always connected with firebase as long as our component is mounted on the DOM. 
+
+      if (userAuth) {
+        const userRef = await createUserProfileDocument(userAuth);
+        userRef.onSnapshot((snapShot) => {
+          this.setState({
+            currentUser: {
+              id: snapShot.id,
+              ...snapShot.data(),
+            },
+          }, ()=> console.log(this.state));
+        });
+      } else {
+        this.setState({currentUser:userAuth})
+      }
     });
   }
 
